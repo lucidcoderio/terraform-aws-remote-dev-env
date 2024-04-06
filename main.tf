@@ -67,3 +67,28 @@ resource "aws_security_group" "trp-security-group" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+resource "aws_key_pair" "trp-auth" {
+  key_name   = "trp-key"
+  public_key = file("~/.ssh/id_aws_ed25519.pub")
+}
+
+
+resource "aws_instance" "trp-dev" {
+  instance_type = "t3.micro"
+  ami           = data.aws_ami.trp-ami.id
+
+  key_name = aws_key_pair.trp-auth.key_name
+  vpc_security_group_ids = [aws_security_group.trp-security-group.id]
+  subnet_id = aws_subnet.trp-public-subnet.id
+
+  user_data =  file("userdata.tpl")
+
+  root_block_device {
+    volume_size = 10
+  }
+
+  tags = {
+    Name = "trp-dev-node"
+  }
+}
